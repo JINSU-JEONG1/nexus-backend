@@ -1,21 +1,14 @@
-# ========================================
-# Spring Boot 애플리케이션 설정 파일 (YAML)
-# ========================================
-
 # Spring Boot 설정
 spring:
   # 애플리케이션 기본 정보
   application:
-    name: apr-backend-assignment  # 애플리케이션 이름
-
-  # ========================================
-  # 데이터베이스 설정 (H2 인메모리 DB)
-  # ========================================
-  datasource:
-    driver-class-name: org.h2.Driver  # H2 JDBC 드라이버
-    url: jdbc:h2:mem:testdb        # H2 인메모리 데이터베이스 URL
-    username: apr                  # 기본 사용자명
-    password: apr1234!@#                     # 비밀번호 (비어있음)
+    name: nexus-backend  # 애플리케이션 이름
+  # 데이터베이스 설정 (docker compose에서 )
+#  datasource:
+#    driver-class-name: org.h2.Driver  # H2 JDBC 드라이버
+#    url: jdbc:h2:mem:testdb        # H2 인메모리 데이터베이스 URL
+#    username: apr                  # 기본 사용자명
+#    password: apr1234!@#                     # 비밀번호 (비어있음)
 
   # ========================================
   # H2 콘솔 설정 (개발용)
@@ -30,9 +23,7 @@ spring:
   # ========================================
   jpa:
     # 데이터베이스 플랫폼 지정 (H2용)
-    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: create-drop # 어플리케이션을 시작할 때 데이터베이스를 초기화하고 다시 테이블 생성
     show-sql: true # SQL 쿼리 로깅 활성화 (개발용)
     # Hibernate 추가 속성
     properties:
@@ -44,7 +35,7 @@ spring:
 # 서버 설정
 # ========================================
 server:
-  port: 8080  # 웹 서버 포트
+  port: 4000  # 웹 서버 포트
 
 # ========================================
 # Swagger UI 설정
