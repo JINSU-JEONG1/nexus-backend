@@ -1,20 +1,20 @@
-# step 1 빌드 환경 (builder)
+# Step 1 : build stage (builder)
 FROM gradle:8.5-jdk21 AS builder
-
 # 작업 디렉토리 설정
 WORKDIR /app
-
 # Gradle 설정 파일 복사
 COPY gradlew .
 COPY gradle gradle
 COPY build.gradle settings.gradle ./
-
+# gradlew 권한설정
+RUN chmod +x gradlew
 # 소스코드복사
 COPY src src
 # JAR생성
 RUN ./gradlew bootJar --no-daemon
 
-# Step 2: 실행 환경 (runner)
+
+# Step 2 : run stage (runner)
 FROM eclipse-temurin:21-jre AS runner
 # 작업 디렉토리 설정
 WORKDIR /app
