@@ -1,5 +1,5 @@
 # step 1 빌드 환경 (builder)
-FROM gradle:8.5-jdk21-alpine AS builder
+FROM gradle:8.5-jdk21 AS builder
 
 # 작업 디렉토리 설정
 WORKDIR /app
@@ -15,7 +15,7 @@ COPY src src
 RUN ./gradlew bootJar --no-daemon
 
 # Step 2: 실행 환경 (runner)
-FROM eclipse-temurin:21-jre-alpine AS runner
+FROM eclipse-temurin:21-jre AS runner
 # 작업 디렉토리 설정
 WORKDIR /app
 # 빌드 스테이지에서 생성된 JAR 파일 복사
