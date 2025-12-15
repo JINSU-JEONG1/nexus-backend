@@ -3,43 +3,31 @@ spring:
   # 애플리케이션 기본 정보
   application:
     name: nexus-backend  # 애플리케이션 이름
-  # 데이터베이스 설정 (docker compose에서 )
-#  datasource:
-#    driver-class-name: org.h2.Driver  # H2 JDBC 드라이버
-#    url: jdbc:h2:mem:testdb        # H2 인메모리 데이터베이스 URL
-#    username: apr                  # 기본 사용자명
-#    password: apr1234!@#                     # 비밀번호 (비어있음)
 
-  # ========================================
-  # H2 콘솔 설정 (개발용)
-  # ========================================
-  h2:
-    console:
-      enabled: true                # H2 웹 콘솔 활성화
-      path: /h2-console           # 콘솔 접속 경로
+  # DB접속정보
+  datasource:
+    # Docker 컨테이너에서 호스트 OS의 DB에 접근, db분리시 변경
+    url: jdbc:postgresql://host.docker.internal:5432/nexus_prod
+    username: nexus
+    password: nexus6993@@
+    driver-class-name: org.postgresql.Driver
 
-  # ========================================
   # JPA (Java Persistence API) 설정
-  # ========================================
   jpa:
-    # 데이터베이스 플랫폼 지정 (H2용)
     hibernate:
-    show-sql: true # SQL 쿼리 로깅 활성화 (개발용)
+      ddl-auto: none
+      show-sql: true # SQL 쿼리 로깅 활성화 (개발용)
     # Hibernate 추가 속성
     properties:
-        dialect: org.hibernate.dialect.H2Dialect
+        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true      # 쿼리 로그 포맷 (정렬)
         show_sql: true        # 쿼리 로그 출력
       
-# ========================================
 # 서버 설정
-# ========================================
 server:
   port: 4000  # 웹 서버 포트
 
-# ========================================
 # Swagger UI 설정
-# ========================================
 springdoc:
   api-docs:
     path: /api-docs  # API 문서 JSON 경로
@@ -49,9 +37,7 @@ springdoc:
     operationsSorter: method  # API 정렬 방식
     tagsSorter: alpha  # 태그 정렬 방식
 
-# ========================================
 # 로깅 설정 (개발용 상세 로그)
-# ========================================
 logging:
   level:
     com.apr.backend: DEBUG                    # 우리 프로젝트 패키지 DEBUG 레벨
