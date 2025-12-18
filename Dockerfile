@@ -6,6 +6,10 @@ WORKDIR /app
 COPY gradlew .
 COPY gradle gradle
 COPY build.gradle settings.gradle ./
+
+# 의존성만 먼저 다운로드 (캐싱)
+RUN ./gradlew dependencies --no-daemon
+
 # gradlew 권한설정
 RUN chmod +x gradlew
 # 소스코드복사

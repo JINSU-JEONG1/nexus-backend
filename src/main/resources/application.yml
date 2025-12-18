@@ -7,7 +7,7 @@ spring:
   # DB접속정보
   datasource:
     # Docker 컨테이너에서 hostid로 db접근, db분리시 변경
-    url: jdbc:postgresql://host.docker.internal:5432/nexus_prod
+    url: jdbc:postgresql://localhost:5432/nexus_prod
     username: nexus
     password: nexus6993@@
     driver-class-name: org.postgresql.Driver
