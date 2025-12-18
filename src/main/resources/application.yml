@@ -6,10 +6,10 @@ spring:
 
   # DB접속정보
   datasource:
-    # Docker 컨테이너에서 hostid로 db접근, db분리시 변경
-    url: jdbc:postgresql://localhost:5432/nexus_prod
-    username: nexus
-    password: nexus6993@@
+    # 환경변수(SPRING_DATASOURCE_URL)가 있으면 그걸 쓰고, 없으면 기본값으로 도커 DB 이름을 사용함
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://nexus-db:5432/nexus_prod}
+    username: ${SPRING_DATASOURCE_USERNAME:nexus}
+    password: ${SPRING_DATASOURCE_PASSWORD:nexus6993@@}
     driver-class-name: org.postgresql.Driver
 
   # JPA (Java Persistence API) 설정
@@ -22,7 +22,7 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true      # 쿼리 로그 포맷 (정렬)
         show_sql: true        # 쿼리 로그 출력
-      
+
 # 서버 설정
 server:
   port: 4000  # 웹 서버 포트
