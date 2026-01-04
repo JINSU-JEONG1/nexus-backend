@@ -1,0 +1,9 @@
+# 운영 설정
+spring:
+  # DB접속정보
+  datasource:
+    # 환경변수(SPRING_DATASOURCE_URL)가 있으면 그걸 쓰고, 없으면 기본값으로 도커 DB 이름을 사용함
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://nexus-db:5432/nexus_prod}
+    username: ${SPRING_DATASOURCE_USERNAME:nexus}
+    password: ${SPRING_DATASOURCE_PASSWORD:nexus6993@@}
+    driver-class-name: org.postgresql.Driver

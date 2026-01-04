@@ -4,6 +4,9 @@ spring:
   application:
     name: nexus-backend  # 애플리케이션 이름
 
+  profiles:
+    active: dev  # 아무 설정 없이 실행하면 기본적으로 dev를 사용하겠다는 뜻
+
   # DB접속정보
   datasource:
     # 환경변수(SPRING_DATASOURCE_URL)가 있으면 그걸 쓰고, 없으면 기본값으로 도커 DB 이름을 사용함
