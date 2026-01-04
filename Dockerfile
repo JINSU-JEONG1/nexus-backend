@@ -7,11 +7,8 @@ COPY build.gradle settings.gradle ./
 COPY gradle gradle
 RUN gradle dependencies --no-daemon
 
-# gradlew 권한설정
-RUN chmod +x gradlew
-# 소스코드복사
+# 소스 복사 후 빌드
 COPY src src
-# JAR생성
 RUN gradle bootJar --no-daemon
 
 
