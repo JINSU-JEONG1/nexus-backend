@@ -1,19 +1,21 @@
-# Step 1 : build stage (builder)
-FROM gradle:8.5-jdk21 AS builder
-# 작업 디렉토리 설정
-WORKDIR /app
-# Gradle 설정 파일 복사
-COPY gradlew .
-COPY gradle gradle
-COPY build.gradle settings.gradle ./
-# gradlew 권한설정
-RUN chmod +x gradlew
-# 의존성만 먼저 다운로드 (캐싱)
-RUN ./gradlew dependencies --no-daemon
-# 소스코드복사
-COPY src src
-# JAR생성
-RUN ./gradlew bootJar --no-daemon
+
+# 빌드는 젠킨스가
+# # Step 1 : build stage (builder)
+# FROM gradle:8.5-jdk21 AS builder
+# # 작업 디렉토리 설정
+# WORKDIR /app
+# # Gradle 설정 파일 복사
+# COPY gradlew .
+# COPY gradle gradle
+# COPY build.gradle settings.gradle ./
+# # gradlew 권한설정
+# RUN chmod +x gradlew
+# # 의존성만 먼저 다운로드 (캐싱)
+# RUN ./gradlew dependencies --no-daemon
+# # 소스코드복사
+# COPY src src
+# # JAR생성
+# RUN ./gradlew bootJar --no-daemon
 
 
 # Step 2 : run stage (runner)
