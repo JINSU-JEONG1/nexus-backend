@@ -6,6 +6,9 @@ import com.nexus.backend.api.shortUrl.entity.ShortUrl;
 import com.nexus.backend.api.shortUrl.repository.ShortUrlRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,22 +22,44 @@ import org.springframework.transaction.annotation.Transactional;
 public class ShortUrlService {
 
     @Autowired
-    private final ShortUrlRepository shortUrlRepository;
+    private ShortUrlRepository shortUrlRepository;
 
-
-//    @Transactional
-//    public ShortUrlResponseDTO findShortUrl(ShortUrlRequestDTO req) {
-//
-//        // requestDTO에서 값 추출
-//        String originUrl = req.getOriginUrl();
-//
-//        // entity 생성 및 DB 저장
-//        ShortUrl entity = shortUrlRepository.save(new ShortUrl(originUrl));
-//
-//        // 3. ID로 shortKey 생성 및 Entity 업데이트
-//        String shortKey = encoder.encode(entity.getId());
-//        entity.updateShortKey(shortKey);
-//        // 4. 저장된 Entity를 Response DTO로 변환하여 리턴
-//        return ShortUrlResponseDTO.from(entity); // 💡 DTO 변환 시점
-//    }
+    @Transactional
+    public ShortUrlResponseDTO createShortUrl(ShortUrlRequestDTO req) {
+        String originUrl = req.getOriginUrl();
+        
+        // 1. 기존 URL 조회
+        Optional<ShortUrl> existing = shortUrlRepository.findByOriginUrl(originUrl);
+        
+        if (existing.isPresent()) {
+            // 2. 존재하면 → 기존 shortUrl 반환
+            ShortUrl entity = existing.get();
+            
+            // 3. 혹시 shortUrl이 null이면 생성 (데이터 정합성 보장)
+            if (entity.getShortUrl() == null) {
+                String shortKey = encoder.encode(entity.getId());
+                entity.updateShortUrl(shortKey);
+                entity = shortUrlRepository.save(entity);
+            }
+            
+            return ShortUrlResponseDTO.from(entity);
+        }
+        
+        // 4. 존재하지 않으면 → 새로 생성
+        // 먼저 저장해서 ID를 얻고, 그 ID로 shortUrl 생성
+        ShortUrl newEntity = ShortUrl.builder()
+            .originUrl(originUrl)
+            .shortUrl("temp")  // 임시값 (나중에 업데이트)
+            .expiredAt(null)
+            .build();
+        
+        newEntity = shortUrlRepository.save(newEntity);  // ID 생성됨
+        
+        // ID로 shortUrl 생성
+        String shortKey = encoder.encode(newEntity.getId());
+        newEntity.updateShortUrl(shortKey);
+        newEntity = shortUrlRepository.save(newEntity);
+        
+        return ShortUrlResponseDTO.from(newEntity);
+    }
 }
