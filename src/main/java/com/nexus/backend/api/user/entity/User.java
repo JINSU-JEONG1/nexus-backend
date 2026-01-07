@@ -1,12 +1,13 @@
 package com.nexus.backend.api.user.entity;
 
-import com.nexus.backend.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import com.nexus.backend.common.entity.BaseEntity;
 
 /**
  * 사용자 엔티티
