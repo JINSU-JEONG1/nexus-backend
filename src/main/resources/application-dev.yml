@@ -6,3 +6,10 @@ spring:
     username: nexus
     password: nexus6993@@
     driver-class-name: org.postgresql.Driver
+    
+server:
+  port: 4000
+
+app:
+  short-url:
+    base-url: http://localhost:4000/s/    

@@ -7,3 +7,10 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME:nexus}
     password: ${SPRING_DATASOURCE_PASSWORD:nexus6993@@}
     driver-class-name: org.postgresql.Driver
+
+server:
+  port: 4000
+  
+app:
+  short-url:
+    base-url: http://js-nexus.kro.kr/s/
