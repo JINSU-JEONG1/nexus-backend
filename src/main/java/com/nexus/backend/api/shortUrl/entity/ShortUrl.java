@@ -13,8 +13,8 @@ import lombok.NoArgsConstructor;
 /**
  * shortUrl 엔티티
  */
-@Entity 
-@Table(name = "SHORT_URL" , schema = "nexus")
+@Entity
+@Table(name = "short_url", schema = "nexus")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ShortUrl extends BaseEntity {
@@ -23,7 +23,7 @@ public class ShortUrl extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "original_url", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "origin_url", nullable = false, columnDefinition = "TEXT")
     private String originUrl;
 
     @Column(name = "short_url", nullable = false, length = 10)
@@ -33,7 +33,8 @@ public class ShortUrl extends BaseEntity {
     private LocalDateTime expiredAt;
 
     @Builder
-    public ShortUrl(String originUrl, String shortUrl, LocalDateTime expiredAt) {
+    public ShortUrl(Long id, String originUrl, String shortUrl, LocalDateTime expiredAt) {
+        this.id = id;
         this.originUrl = originUrl;
         this.shortUrl = shortUrl;
         this.expiredAt = expiredAt;
@@ -42,6 +43,5 @@ public class ShortUrl extends BaseEntity {
     public void updateShortUrl(String shortUrl) {
         this.shortUrl = shortUrl;
     }
-
 
 }

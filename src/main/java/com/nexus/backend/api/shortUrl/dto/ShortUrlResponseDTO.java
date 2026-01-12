@@ -19,10 +19,10 @@ public class ShortUrlResponseDTO {
     /**
      * Entity를 DTO로 변환하는 정적 팩토리 메서드
      */
-    public static ShortUrlResponseDTO from(ShortUrl entity) {
+    public static ShortUrlResponseDTO from(ShortUrl entity, String baseUrl) {
         return ShortUrlResponseDTO.builder()
                 .originUrl(entity.getOriginUrl())
-                .shortUrl(entity.getShortUrl())
+                .shortUrl(baseUrl + entity.getShortUrl())
                 .build();
     }
 }
