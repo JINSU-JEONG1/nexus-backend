@@ -55,7 +55,7 @@ public class ShortUrlController {
      * short URL 리다이렉트
      */
     @Operation(summary = "short URL 리다이렉트", description = "short URL을 입력받아 리다이렉트합니다")
-    @GetMapping("/s/{shortHash}")
+    @GetMapping("/re/{shortHash}")
     public RedirectView redirect(
             @PathVariable("shortHash") String shortHash) {
         log.info("리다이렉트 요청 해시: {}", shortHash);
