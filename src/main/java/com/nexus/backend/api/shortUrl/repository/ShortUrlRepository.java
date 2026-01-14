@@ -13,4 +13,4 @@ public interface ShortUrlRepository extends JpaRepository<ShortUrl, Long> {
 
     Optional<ShortUrl> findByOriginUrl(String originUrl);
 
-}
+};

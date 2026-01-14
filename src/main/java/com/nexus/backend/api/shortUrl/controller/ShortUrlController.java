@@ -24,7 +24,6 @@ import org.springframework.web.servlet.view.RedirectView;
 @Tag(name = "short url 관리 컨트롤러", description = "short url API")
 @Slf4j
 @RestController
-@RequestMapping("/api/short-url")
 @RequiredArgsConstructor
 public class ShortUrlController {
 
@@ -36,7 +35,7 @@ public class ShortUrlController {
      * 짧은 URL 생성
      */
     @Operation(summary = "짧은 URL 생성", description = "원본 URL을 입력받아 짧은 URL을 생성합니다")
-    @PostMapping(value = "/create.api")
+    @PostMapping(value = "/api/short-url/create.api")
     public ApiResponse<ShortUrlResponseDTO> createShortUrl(
             @RequestBody @Valid ApiRequest<ShortUrlRequestDTO> request,
             Errors errors) {
@@ -55,14 +54,12 @@ public class ShortUrlController {
     /**
      * short URL 리다이렉트
      */
-    // @Operation(summary = "short URL 리다이렉트", description = "short URL을 입력받아
-    // 리다이렉트합니다")
-    // @GetMapping("s/{shortHash}")
-    // public RedirectView redirect(@PathVariable String shortHash) {
-    // log.info("리다이렉트 요청 해시: {}", shortHash);
-    // String originalUrl = shortUrlService.getOriginalUrlByHash(shortHash);
-
-    // // ... 생략 ...
-    // return new RedirectView(originalUrl);
-    // }
+    @Operation(summary = "short URL 리다이렉트", description = "short URL을 입력받아 리다이렉트합니다")
+    @GetMapping("/s/{shortHash}")
+    public RedirectView redirect(
+            @PathVariable("shortHash") String shortHash) {
+        log.info("리다이렉트 요청 해시: {}", shortHash);
+        String originUrl = shortUrlService.getOriginUrlByShortUrl(shortHash);
+        return new RedirectView(originUrl);
+    }
 }

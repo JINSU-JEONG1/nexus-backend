@@ -50,4 +50,11 @@ public class ShortUrlService {
 
         return ShortUrlResponseDTO.from(newEntity, baseUrl);
     }
+
+    @Transactional(readOnly = true)
+    public String getOriginUrlByShortUrl(String shortUrl) {
+        // shortHash 로 originUrl 찾기
+        Optional<ShortUrl> entity = shortUrlRepository.findByShortUrl(shortUrl);
+        return entity.get().getOriginUrl();
+    }
 }
