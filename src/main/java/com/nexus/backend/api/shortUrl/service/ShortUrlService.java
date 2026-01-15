@@ -46,11 +46,19 @@ public class ShortUrlService {
     public ShortUrlResponseDTO createShortUrl(ShortUrlRequestDTO req) {
         String originUrl = req.getOriginUrl();
 
-        // 1. [핵심] Redis에서 먼저 중복 확인 (DB I/O 원천 차단)
+        // 1. Redis 중복 확인 (originUrl -> shortKey)
         Cache originCache = cacheManager.getCache("originUrls");
         if (originCache != null && originCache.get(originUrl) != null) {
             String cachedShortKey = originCache.get(originUrl, String.class);
-            return ShortUrlResponseDTO.of(originUrl, cachedShortKey, baseUrl);
+            log.info("중복 생성 방지 (Cache Hit): {}", originUrl);
+
+            // of 대신, 기존에 쓰시던 from 방식을 유지하기 위해 임시 엔티티 생성
+            ShortUrl tempEntity = ShortUrl.builder()
+                    .originUrl(originUrl)
+                    .shortUrl(cachedShortKey)
+                    .build();
+
+            return ShortUrlResponseDTO.from(tempEntity, baseUrl);
         }
 
         // 기존 URL 있으면 바로 반환
