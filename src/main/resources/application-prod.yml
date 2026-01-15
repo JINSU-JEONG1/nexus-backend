@@ -7,6 +7,15 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME:nexus}
     password: ${SPRING_DATASOURCE_PASSWORD:nexus6993@@}
     driver-class-name: org.postgresql.Driver
+  data:
+    redis:
+      host: nexus-redis
+      port: 6379
+  cache:
+    type: redis 
+    redis:
+      time-to-live: 86400000 # 24시간
+      cache-null-values: false
 
 server:
   port: 4000
