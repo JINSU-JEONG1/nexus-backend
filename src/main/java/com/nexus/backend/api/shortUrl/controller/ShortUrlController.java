@@ -62,25 +62,4 @@ public class ShortUrlController {
         String originUrl = shortUrlService.getOriginUrlByShortUrl(shortHash);
         return new RedirectView(originUrl);
     }
-
-    /**
-     * 짧은 URL 생성
-     */
-    @Operation(summary = "짧은 URL 생성", description = "원본 URL을 입력받아 짧은 URL을 생성합니다")
-    @PostMapping(value = "/api/short-url/v2/create.api")
-    public ApiResponse<ShortUrlResponseDTO> createShortUrlV2(
-            @RequestBody @Valid ApiRequest<ShortUrlRequestDTO> request,
-            Errors errors) {
-
-        if (errors.hasErrors()) {
-            log.error("짧은 URL 생성 요청 오류: {}", errors.getAllErrors());
-            return ApiResponse.error(ApiResponseError.ERROR_DEFAULT);
-        }
-
-        log.info("짧은 URL 생성 요청: {}", request.getData().getOriginUrl());
-        ShortUrlResponseDTO responseDTO = shortUrlService.createShortUrl(request.getData());
-
-        return ApiResponse.success("짧은 URL이 생성되었습니다.", responseDTO);
-    }
-
 }

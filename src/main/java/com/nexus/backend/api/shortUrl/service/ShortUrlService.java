@@ -103,32 +103,6 @@ public class ShortUrlService {
         return entity.get().getOriginUrl();
     }
 
-    @Transactional
-    public ShortUrlResponseDTO createShortUrlV2(ShortUrlRequestDTO req) {
-        String originUrl = req.getOriginUrl();
-
-        // 기존 URL 있으면 바로 반환
-        Optional<ShortUrl> existing = shortUrlRepository.findByOriginUrl(originUrl);
-        if (existing.isPresent()) {
-            ShortUrl entity = existing.get();
-            log.info("중복 URL 반환 (NoCache): {}", originUrl);
-            return ShortUrlResponseDTO.from(entity, baseUrl);
-        }
-
-        // 새로운 URL 생성 및 저장
-        ShortUrl entity = shortUrlRepository.save(
-                ShortUrl.builder()
-                        .originUrl(originUrl)
-                        .build());
-
-        // shortKey 생성 및 업데이트
-        String shortKey = Base62Utils.encode(entity.getId());
-        entity.updateShortUrl(shortKey);
-
-        log.info("새 URL 생성 (NoCache): {} -> {}", originUrl, shortKey);
-        return ShortUrlResponseDTO.from(entity, baseUrl);
-    }
-
     // 캐시 저장을 위한 헬퍼 메서드
     private void putInCaches(String shortKey, String originUrl) {
         Cache shortCache = cacheManager.getCache("shortUrls"); // 리다이렉트용
