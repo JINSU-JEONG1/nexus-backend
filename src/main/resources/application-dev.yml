@@ -12,4 +12,4 @@ server:
 
 app:
   short-url:
-    base-url: http://localhost:4000/s/    
+    base-url: http://localhost:4000/re/    
