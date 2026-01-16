@@ -12,12 +12,10 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,16 +24,17 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class ShortUrlService {
 
-    @Autowired
-    private ShortUrlRepository shortUrlRepository;
-
-    @Autowired
-    private CacheManager cacheManager;
+    private final ShortUrlRepository shortUrlRepository;
+    private final CacheManager cacheManager;
 
     @Value("${app.short-url.base-url}")
     private String baseUrl; // yml에서 바로 주입
+
+    private static final String CACHE_SHORT = "shortUrls";
+    private static final String CACHE_ORIGIN = "originUrls";
 
     /**
      * Short URL 생성
@@ -46,13 +45,12 @@ public class ShortUrlService {
     public ShortUrlResponseDTO createShortUrl(ShortUrlRequestDTO req) {
         String originUrl = req.getOriginUrl();
 
-        // 1. Redis 중복 확인 (originUrl -> shortKey)
-        Cache originCache = cacheManager.getCache("originUrls");
+        // Redis 중복 확인 (originUrl -> shortKey)
+        Cache originCache = cacheManager.getCache(CACHE_ORIGIN);
         if (originCache != null && originCache.get(originUrl) != null) {
             String cachedShortKey = originCache.get(originUrl, String.class);
             log.info("중복 생성 방지 (Cache Hit): {}", originUrl);
 
-            // of 대신, 기존에 쓰시던 from 방식을 유지하기 위해 임시 엔티티 생성
             ShortUrl tempEntity = ShortUrl.builder()
                     .originUrl(originUrl)
                     .shortUrl(cachedShortKey)
@@ -86,7 +84,7 @@ public class ShortUrlService {
         return ShortUrlResponseDTO.from(entity, baseUrl);
     }
 
-    @Cacheable(value = "shortUrls", key = "#shortUrl")
+    @Cacheable(value = CACHE_SHORT, key = "#shortUrl")
     @Transactional(readOnly = true)
     public String getOriginUrlByShortUrl(String shortUrl) {
         log.info("getOriginUrlByShortUrl: {}", shortUrl);
@@ -94,19 +92,18 @@ public class ShortUrlService {
         // DB에서 엔티티 조회
         Optional<ShortUrl> entity = shortUrlRepository.findByShortUrl(shortUrl);
 
-        // 존재하지 않으면 즉시 예외 발생 (명시적 처리)
+        // 존재하지 않으면
         if (entity.isEmpty()) {
             throw new EntityNotFoundException("해당 단축 URL을 찾을 수 없습니다: " + shortUrl);
         }
 
-        // 존재하면 원본 URL 반환
         return entity.get().getOriginUrl();
     }
 
     // 캐시 저장을 위한 헬퍼 메서드
     private void putInCaches(String shortKey, String originUrl) {
-        Cache shortCache = cacheManager.getCache("shortUrls"); // 리다이렉트용
-        Cache originCache = cacheManager.getCache("originUrls"); // 중복확인용
+        Cache shortCache = cacheManager.getCache(CACHE_SHORT); // 리다이렉트용
+        Cache originCache = cacheManager.getCache(CACHE_ORIGIN); // 중복확인용
         if (shortCache != null)
             shortCache.put(shortKey, originUrl);
         if (originCache != null)
