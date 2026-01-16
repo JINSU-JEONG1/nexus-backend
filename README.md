@@ -32,6 +32,9 @@
 ---
 
 ## 🏗️ Architecture
+<img width="1408" height="768" alt="nexus-architecture" src="https://github.com/user-attachments/assets/8e8ad4f8-c140-4b5c-85f9-b6dd00216276" />
+
+
 
 
 ### ShortUrl Service (고성능 URL 단축 서비스)
