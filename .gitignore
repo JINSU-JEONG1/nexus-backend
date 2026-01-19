@@ -38,3 +38,4 @@ out/
 
 ### VS Code ###
 .vscode/
+.agent/rules/backend-prompt.md
