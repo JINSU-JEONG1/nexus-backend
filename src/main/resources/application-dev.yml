@@ -6,6 +6,11 @@ spring:
     username: nexus
     password: nexus6993@@
     driver-class-name: org.postgresql.Driver
+  # 레디스
+  data:
+    redis:
+      host: localhost
+      port: 6379
     
 server:
   port: 4000
