@@ -19,15 +19,16 @@ public class SwaggerConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("APR Backend Assignment API")
-                        .description("친구 맺기 기능을 제공하는 REST API")
+                        .title("nexus Backend API")
+                        .description("nexus Backend REST API")
                         .version("1.0.0")
                         .contact(new Contact()
-                                .name("APR Backend Team")
-                                .email("apr@example.com")))
+                                .name("jsjeong")
+                                .email("jinsu6993@naver.com")))
                 .servers(List.of(
-                        new Server()
-                                .url("http://localhost:8080")
-                                .description("로컬 개발 서버")));
+                        new Server().url("http://localhost:4000").description("로컬 개발용"),
+                        new Server().url("https://api.nexus-backend.com").description("운영 서버")
+                ));
+
     }
 }
