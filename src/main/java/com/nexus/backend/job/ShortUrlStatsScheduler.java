@@ -11,6 +11,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -37,6 +38,7 @@ public class ShortUrlStatsScheduler {
 
         log.info("Stats Sync Started. Targets: {}", dirtyShortUrls.size());
 
+        LocalDate today = LocalDate.now(); // 통계 기준 날짜 고정
         Map<String, Long> clickCounts = new HashMap<>();
         List<String> processedKeys = new ArrayList<>();
 
@@ -66,7 +68,8 @@ public class ShortUrlStatsScheduler {
         List<Long> shortUrlIds = shortUrlList.stream().map(ShortUrl::getId).toList();
 
         // ShortUrlStats 조회 (ID 사용)
-        List<ShortUrlStats> statsList = shortUrlStatsRepository.findByShortUrlIdIn(shortUrlIds);
+        // List<ShortUrlStats> statsList = shortUrlStatsRepository.findByShortUrlIdIn(shortUrlIds);
+        List<ShortUrlStats> statsList = shortUrlStatsRepository.findByShortUrlIdInAndStatDate(shortUrlIds, today);
         Map<Long, ShortUrlStats> statsMap = statsList.stream()
                 .collect(Collectors.toMap(ShortUrlStats::getShortUrlId, Function.identity()));
 
@@ -74,19 +77,19 @@ public class ShortUrlStatsScheduler {
 
         // 병합 및 업데이트
         for (Map.Entry<String, Long> entry : clickCounts.entrySet()) {
-            String shortKey = entry.getKey();
-            Long count = entry.getValue();
-
-            ShortUrl shortUrl = shortUrlMap.get(shortKey);
-            if (shortUrl == null) continue; // DB에 없는 URL (예외적 상황)
+            ShortUrl shortUrl = shortUrlMap.get(entry.getKey());
+            if (shortUrl == null) continue;
             
+            // 오늘 자 데이터가 있으면 가져오고, 없으면 오늘 날짜로 새로 생성
             ShortUrlStats stats = statsMap.get(shortUrl.getId());
             if (stats == null) {
-                // 없으면 생성
-                stats = ShortUrlStats.builder().shortUrlId(shortUrl.getId()).build();
+                stats = ShortUrlStats.builder()
+                        .shortUrlId(shortUrl.getId())
+                        .statDate(today) // 날짜 명시적 주입
+                        .build();
             }
             
-            stats.addClicks(count);
+            stats.addClicks(entry.getValue());
             toSave.add(stats);
         }
 
