@@ -32,12 +32,6 @@ public class ShortUrlStats extends BaseEntity {
     @Column(name = "click_count", nullable = false)
     private Long clickCount = 0L;
 
-    @Column(name = "last_clicked_at")
-    private LocalDateTime lastClickedAt;
-
-    @Column(name = "user_agent", columnDefinition = "TEXT")
-    private String userAgent;
-
     @Column(name = "referer", columnDefinition = "TEXT")
     private String referer;
 
@@ -51,7 +45,6 @@ public class ShortUrlStats extends BaseEntity {
     // Redis 데이터를 DB로 동기화(Bulk Update)할 때 사용
     public void addClicks(long count) {
         this.clickCount += count;
-        this.lastClickedAt = LocalDateTime.now();
     }
 
 }
