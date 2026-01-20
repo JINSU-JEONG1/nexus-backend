@@ -10,7 +10,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling // 스케줄링 활성화
 @EnableCaching // 캐시
 @SpringBootApplication // Spring Boot 자동 설정, 컴포넌트 스캔, 설정 클래스 활성화
-@EnableJpaAuditing // JPA Auditing 활성화 (@CreatedDate, @LastModifiedDate 자동 처리)
 public class NexusBackendApplication {
 
     public static void main(String[] args) {
