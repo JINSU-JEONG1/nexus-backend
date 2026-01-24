@@ -74,20 +74,20 @@ public class ShortUrlController {
      * 추이 차트 데이터 조회
      */
      @Operation(summary = "Trend 차트 데이터 조회", description = "Trend 차트 데이터를 조회합니다")
-     @GetMapping(value = "/stats/trend")
+     @PostMapping(value = "/stats/trend")
      public ApiResponse<ShortUrlStatsResponseDTO.Trend> getTrendData(
              @RequestBody @Valid ApiRequest<ShortUrlStatsRequestDTO> request,
              Errors errors) {
 
          if (errors.hasErrors()) {
-             log.error("추이 차트 데이터 조회 요청 오류: {}", errors.getAllErrors());
+             log.error("Trend 차트 데이터 조회 요청 오류: {}", errors.getAllErrors());
              return ApiResponse.error(ApiResponseError.ERROR_DEFAULT);
          }
 
-         log.info("추이 차트 데이터 조회 요청: {}", request.getData().getPeriod());
+         log.info("Trend 차트 데이터 조회 요청: {}", request.getData().getPeriod());
          ShortUrlStatsResponseDTO.Trend responseDTO = shortUrlService.getTrend(request);
 
-         return ApiResponse.success("추이 차트 데이터가 조회되었습니다.", responseDTO);
+         return ApiResponse.success("Trend 차트 데이터가 조회되었습니다.", responseDTO);
      }
 
     /**

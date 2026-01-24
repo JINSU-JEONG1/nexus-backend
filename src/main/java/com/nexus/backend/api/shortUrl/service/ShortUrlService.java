@@ -16,7 +16,9 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -155,21 +157,26 @@ public class ShortUrlService {
         // 기간 설정
         switch (period) {
             case "day" -> {
-                currentStart = now.minusDays(1);
-                prevStart = now.minusDays(2);
+                currentStart = now;
+                prevStart = now.minusDays(1);
             }
             case "month" -> {
-                currentStart = now.minusMonths(1);
-                prevStart = now.minusMonths(2);
+                // 이번달
+                currentStart = now.withDayOfMonth(1);
+                // 저번달
+                prevStart = currentStart.minusMonths(1);
             }
-            default -> { // week
-                currentStart = now.minusWeeks(1);
-                prevStart = now.minusWeeks(2);
+            default -> { // week (이번 주 월요일 기준)
+                currentStart = now.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                prevStart = currentStart.minusWeeks(1);
             }
         }
 
+        log.info("currentStart : {} ", currentStart);
+        log.info("prevStart : {} ", prevStart);
+
         //  Raw 데이터 조회
-        ShortUrlStatsResponseDTO.Kpi rawData  = shortUrlQueryRepository.getKpi(currentStart, prevStart);
+        ShortUrlStatsResponseDTO.Kpi rawData  = shortUrlQueryRepository.getKpi(prevStart, currentStart);
 
         long curr = rawData.getCurrentClicks();
         long prev = rawData.getPrevClicks();
@@ -177,17 +184,27 @@ public class ShortUrlService {
         long totalLinks = rawData.getTotalLinks();
 
         // 증감률 계산
-        double periodClicksChange = (prev == 0) ? -100.0 : ((double) (curr - prev) / prev) * 100;
+        double periodClicksChange;
+        if(prev == 0){
+            // 지난 데이터가 0인데 현재 데이터가 있으면 100% 증가, 둘 다 0이면 0%
+            periodClicksChange = (curr > 0) ? 100.0 : 0.0;
+        }else{
+            periodClicksChange = ((double)(curr - prev) / prev) * 100;
+        }
 
-        // 평균 클릭률 계산 (링크당 클릭수)
-        double avgClickRate = (totalLinks == 0) ? 0.0 : ((double) totalClicks / totalLinks);
+        // 소수점 두 자리 반올림
+        periodClicksChange = Math.round(periodClicksChange * 100.0) / 100.0;
+
+        // 평균 클릭률 계산 미구현
+        double avgClickRate = 0.0;
 
         // 4. 최종 DTO 조립 및 반환 (Builder 결과물을 반드시 return)
         ShortUrlStatsResponseDTO.Kpi result = ShortUrlStatsResponseDTO.Kpi.builder()
                 .totalLinks(totalLinks)
                 .totalClicks(totalClicks)
                 .currentClicks(curr)
-                .periodClicksChange(Math.round(periodClicksChange))
+                .prevClicks(prev)
+                .periodClicksChange(periodClicksChange)
                 .avgClickRateChange(avgClickRate)
                 .todayClicked(rawData.getTodayClicked())
                 .build();
@@ -200,27 +217,101 @@ public class ShortUrlService {
     @Transactional(readOnly = true)
     public ShortUrlStatsResponseDTO.Trend getTrend(ApiRequest<ShortUrlStatsRequestDTO> req) {
         String period = req.getData().getPeriod();
-
         LocalDate now = LocalDate.now();
-        LocalDate currentStart;
-        LocalDate prevStart;
-
-        // 기간 설정
+        
+        LocalDate startDate;
+        LocalDate endDate = now;
+        
+        // Rolling Window 범위 설정
         switch (period) {
             case "day" -> {
-                currentStart = now.minusDays(1);
-                prevStart = now.minusDays(2);
+                // 최근 7일 (어제까지 6일 + 오늘)
+                startDate = now.minusDays(6);
+            }
+            case "week" -> {
+                // 최근 6주 (지난 5주 + 이번 주)
+                startDate = now.minusWeeks(5).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
             }
             case "month" -> {
-                currentStart = now.minusMonths(1);
-                prevStart = now.minusMonths(2);
+                // 최근 12개월 (지난 11개월 + 이번 달)
+                startDate = now.minusMonths(11).withDayOfMonth(1);
             }
-            default -> { // week
-                currentStart = now.minusWeeks(1);
-                prevStart = now.minusWeeks(2);
+            default -> {
+                startDate = now.minusDays(6);
             }
         }
+        
+        log.info("Trend Period: {}, StartDate: {}, EndDate: {}", period, startDate, endDate);
+        
+        // Repository에서 데이터 조회
+        ShortUrlQueryRepository.TrendDataHolder dataHolder = 
+                (ShortUrlQueryRepository.TrendDataHolder) shortUrlQueryRepository.getTrend(startDate, endDate);
+        
+        // 라벨 생성 및 데이터 매핑
+        java.util.List<String> labels = new java.util.ArrayList<>();
+        java.util.List<Long> created = new java.util.ArrayList<>();
+        java.util.List<Long> clicks = new java.util.ArrayList<>();
+        
+        // period별 라벨 생성 및 데이터 집계
+        switch (period) {
+            case "day" -> {
+                // 요일 라벨 생성 (월, 화, 수, 목, 금, 토, 일)
+                String[] dayLabels = {"일", "월", "화", "수", "목", "금", "토"};
+                for (int i = 0; i < 7; i++) {
+                    LocalDate date = startDate.plusDays(i);
+                    int dayOfWeek = date.getDayOfWeek().getValue() % 7; // 1=월요일 -> 1, 7=일요일 -> 0
+                    labels.add(dayLabels[dayOfWeek]);
+                    created.add(dataHolder.createdMap.getOrDefault(date, 0L));
+                    clicks.add(dataHolder.clickMap.getOrDefault(date, 0L));
+                }
+            }
+            case "week" -> {
+                // 주차 라벨 생성 (1주차, 2주차, ...)
+                for (int i = 0; i < 6; i++) {
+                    labels.add((i + 1) + "주차");
+                    LocalDate weekStart = startDate.plusWeeks(i);
+                    LocalDate weekEnd = weekStart.plusDays(6);
+                    
+                    long weekCreated = 0;
+                    long weekClicks = 0;
+                    
+                    // 해당 주의 모든 날짜를 순회하며 집계
+                    for (LocalDate d = weekStart; !d.isAfter(weekEnd); d = d.plusDays(1)) {
+                        weekCreated += dataHolder.createdMap.getOrDefault(d, 0L);
+                        weekClicks += dataHolder.clickMap.getOrDefault(d, 0L);
+                    }
+                    
+                    created.add(weekCreated);
+                    clicks.add(weekClicks);
+                }
+            }
+            case "month" -> {
+                // 월 라벨 생성 (1월, 2월, ...)
+                for (int i = 0; i < 12; i++) {
+                    LocalDate monthDate = startDate.plusMonths(i);
+                    labels.add(monthDate.getMonthValue() + "월");
+                    LocalDate monthStart = monthDate.withDayOfMonth(1);
+                    LocalDate monthEnd = monthDate.withDayOfMonth(monthDate.lengthOfMonth());
+                    
+                    long monthCreated = 0;
+                    long monthClicks = 0;
+                    
+                    // 해당 월의 모든 날짜를 순회하며 집계
+                    for (LocalDate d = monthStart; !d.isAfter(monthEnd); d = d.plusDays(1)) {
+                        monthCreated += dataHolder.createdMap.getOrDefault(d, 0L);
+                        monthClicks += dataHolder.clickMap.getOrDefault(d, 0L);
+                    }
+                    
+                    created.add(monthCreated);
+                    clicks.add(monthClicks);
+                }
+            }
+        }
+        
         return ShortUrlStatsResponseDTO.Trend.builder()
+                .labels(labels)
+                .created(created)
+                .clicks(clicks)
                 .build();
     }
 

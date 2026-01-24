@@ -19,9 +19,9 @@ public class ShortUrlStatsResponseDTO {
     public static class Kpi {
         private long totalLinks;            // 전체 생성된 링크 수
         private long totalClicks;           // 전체 클릭 수
-        private long currentClicks;          // 기간별 클릭 수
+        private long currentClicks;         // 기간별 클릭 수
         private long prevClicks;            // 저번 기간 클릭수
-        private long periodClicksChange;    // 기간별 클릭 수 변화량
+        private double periodClicksChange;    // 기간별 클릭 수 변화량
         private double avgClickRateChange;  // 평균 클릭률 변화량
         private long todayClicked;          // 오늘 클릭 수
 
@@ -33,6 +33,7 @@ public class ShortUrlStatsResponseDTO {
             this.totalClicks = totalClicks;
             this.currentClicks = currentClicks;
             this.prevClicks = prevClicks;
+            this.periodClicksChange = periodClicksChange;
             this.avgClickRateChange = avgClickRateChange;
             this.todayClicked = todayClicked;
         }
