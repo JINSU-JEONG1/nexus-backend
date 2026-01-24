@@ -1,10 +1,14 @@
 package com.nexus.backend.api.shortUrl.service;
 
+import com.nexus.backend.common.api.ApiRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 import com.nexus.backend.api.shortUrl.dto.ShortUrlRequestDTO;
 import com.nexus.backend.api.shortUrl.dto.ShortUrlResponseDTO;
+import com.nexus.backend.api.shortUrl.dto.ShortUrlStatsRequestDTO;
+import com.nexus.backend.api.shortUrl.dto.ShortUrlStatsResponseDTO;
 import com.nexus.backend.api.shortUrl.entity.ShortUrl;
+import com.nexus.backend.api.shortUrl.repository.ShortUrlQueryRepository;
 import com.nexus.backend.api.shortUrl.repository.ShortUrlRepository;
 import com.nexus.backend.common.utils.Base62Utils;
 
@@ -12,6 +16,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ShortUrlService {
 
     private final ShortUrlRepository shortUrlRepository;
+    private final ShortUrlQueryRepository shortUrlQueryRepository;
     private final CacheManager cacheManager;
     private final StringRedisTemplate redisTemplate;
 
@@ -136,5 +142,89 @@ public class ShortUrlService {
         if (originCache != null)
             originCache.put(originUrl, shortKey);
     }
+
+    // KPI 데이터 조회
+    @Transactional(readOnly = true)
+    public ShortUrlStatsResponseDTO.Kpi getKpi(ApiRequest<ShortUrlStatsRequestDTO> req) {
+        String period = req.getData().getPeriod();
+
+        LocalDate now = LocalDate.now();
+        LocalDate currentStart;
+        LocalDate prevStart;
+
+        // 기간 설정
+        switch (period) {
+            case "day" -> {
+                currentStart = now.minusDays(1);
+                prevStart = now.minusDays(2);
+            }
+            case "month" -> {
+                currentStart = now.minusMonths(1);
+                prevStart = now.minusMonths(2);
+            }
+            default -> { // week
+                currentStart = now.minusWeeks(1);
+                prevStart = now.minusWeeks(2);
+            }
+        }
+
+        //  Raw 데이터 조회
+        ShortUrlStatsResponseDTO.Kpi rawData  = shortUrlQueryRepository.getKpi(currentStart, prevStart);
+
+        long curr = rawData.getCurrentClicks();
+        long prev = rawData.getPrevClicks();
+        long totalClicks = rawData.getTotalClicks();
+        long totalLinks = rawData.getTotalLinks();
+
+        // 증감률 계산
+        double periodClicksChange = (prev == 0) ? -100.0 : ((double) (curr - prev) / prev) * 100;
+
+        // 평균 클릭률 계산 (링크당 클릭수)
+        double avgClickRate = (totalLinks == 0) ? 0.0 : ((double) totalClicks / totalLinks);
+
+        // 4. 최종 DTO 조립 및 반환 (Builder 결과물을 반드시 return)
+        ShortUrlStatsResponseDTO.Kpi result = ShortUrlStatsResponseDTO.Kpi.builder()
+                .totalLinks(totalLinks)
+                .totalClicks(totalClicks)
+                .currentClicks(curr)
+                .periodClicksChange(Math.round(periodClicksChange))
+                .avgClickRateChange(avgClickRate)
+                .todayClicked(rawData.getTodayClicked())
+                .build();
+
+        log.info("KPI Calculation Success: {}", result);
+        return result;
+    }
+
+    // 추이 차트 데이터 조회
+    @Transactional(readOnly = true)
+    public ShortUrlStatsResponseDTO.Trend getTrend(ApiRequest<ShortUrlStatsRequestDTO> req) {
+        String period = req.getData().getPeriod();
+
+        LocalDate now = LocalDate.now();
+        LocalDate currentStart;
+        LocalDate prevStart;
+
+        // 기간 설정
+        switch (period) {
+            case "day" -> {
+                currentStart = now.minusDays(1);
+                prevStart = now.minusDays(2);
+            }
+            case "month" -> {
+                currentStart = now.minusMonths(1);
+                prevStart = now.minusMonths(2);
+            }
+            default -> { // week
+                currentStart = now.minusWeeks(1);
+                prevStart = now.minusWeeks(2);
+            }
+        }
+        return ShortUrlStatsResponseDTO.Trend.builder()
+                .build();
+    }
+
+
+
 
 }
