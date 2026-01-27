@@ -98,10 +98,6 @@ public class ShortUrlQueryRepository {
 
     /**
      * 통합 트렌드 조회 (클릭 + 생성 수)
-     * Rolling Window 방식으로 period별 집계
-     * @param startDate 조회 시작일
-     * @param endDate 조회 종료일 (오늘)
-     * @return period별 날짜, 생성수, 클릭수 리스트
      */
     public ShortUrlStatsResponseDTO.Trend getTrend(LocalDate startDate, LocalDate endDate) {
         QShortUrl qUrl = QShortUrl.shortUrl1;

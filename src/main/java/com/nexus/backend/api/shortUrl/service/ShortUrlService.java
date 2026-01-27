@@ -18,7 +18,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
+import java.util.Locale;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -253,24 +255,31 @@ public class ShortUrlService {
         java.util.List<Long> clicks = new java.util.ArrayList<>();
         
         // period별 라벨 생성 및 데이터 집계
+        DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern("MM.dd(E)", Locale.KOREA);
+        DateTimeFormatter weekFormatter = DateTimeFormatter.ofPattern("MM.dd");
+        DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("yy.MM");
+
         switch (period) {
             case "day" -> {
-                // 요일 라벨 생성 (월, 화, 수, 목, 금, 토, 일)
-                String[] dayLabels = {"일", "월", "화", "수", "목", "금", "토"};
+                // 일별 라벨 생성 ex: 01.27(화)
                 for (int i = 0; i < 7; i++) {
                     LocalDate date = startDate.plusDays(i);
-                    int dayOfWeek = date.getDayOfWeek().getValue() % 7; // 1=월요일 -> 1, 7=일요일 -> 0
-                    labels.add(dayLabels[dayOfWeek]);
+                    labels.add(date.format(dayFormatter));
                     created.add(dataHolder.createdMap.getOrDefault(date, 0L));
                     clicks.add(dataHolder.clickMap.getOrDefault(date, 0L));
                 }
             }
             case "week" -> {
-                // 주차 라벨 생성 (1주차, 2주차, ...)
+                // 주차 라벨 생성 ex: 01.22~01.28(금주), 01.15~01.21(1주전)
                 for (int i = 0; i < 6; i++) {
-                    labels.add((i + 1) + "주차");
                     LocalDate weekStart = startDate.plusWeeks(i);
                     LocalDate weekEnd = weekStart.plusDays(6);
+                    
+                    int weeksAgo = 5 - i; // i=5 -> 0(금주), i=4 -> 1주전
+                    String suffix = (weeksAgo == 0) ? "(금주)" : "(" + weeksAgo + "주전)";
+                    String label = weekStart.format(weekFormatter) + "~" + weekEnd.format(weekFormatter) + suffix;
+                    
+                    labels.add(label);
                     
                     long weekCreated = 0;
                     long weekClicks = 0;
@@ -286,10 +295,11 @@ public class ShortUrlService {
                 }
             }
             case "month" -> {
-                // 월 라벨 생성 (1월, 2월, ...)
+                // 월 라벨 생성 ex: 26.01, 25.12
                 for (int i = 0; i < 12; i++) {
                     LocalDate monthDate = startDate.plusMonths(i);
-                    labels.add(monthDate.getMonthValue() + "월");
+                    labels.add(monthDate.format(monthFormatter));
+                    
                     LocalDate monthStart = monthDate.withDayOfMonth(1);
                     LocalDate monthEnd = monthDate.withDayOfMonth(monthDate.lengthOfMonth());
                     
