@@ -51,7 +51,6 @@
   - `Daily`: 최근 7일간의 변동 추이
   - `Weekly`: 최근 6주간의 주차별 성장률
   - `Monthly`: 최근 12개월간의 장기 트렌드
-- **정밀한 증감률 계산**: 전 기간 대비 성장률(%) 자동 계산 및 예외 처리 (Zero-Division Handling)
 
 **성능 개선 결과**
 - 캐시 HIT 시: PostgreSQL 대비 **50배 이상 빠른 응답** (50ms → 1ms)
@@ -107,16 +106,63 @@ nexus-backend/
 
 ---
 
-## 🔧 Technical Implementation
+## 📊 Database Schema (ERD)
 
-### Caching Strategy
-- **Write-Through**: 생성 즉시 Redis 캐시 저장
-- **Cache-Aside**: `@Cacheable` 기반 자동 조회 캐싱
-- **양방향 캐싱**: `{short→origin}`, `{origin→short}` 동시 관리
+### `short_url` (URL 정보 테이블)
+| Column | Type | Description |
+|--------|------|-------------|
+| id | bigint | Primary Key (PK) |
+| origin_url | text | 원본 URL 주소 |
+| short_url | varchar(10) | 단축된 62진수 키값 |
+| expired_at | timestamp | URL 만료 일시 (Optional) |
+| created_at | timestamp | 생성 일시 |
+| updated_at | timestamp | 수정 일시 |
 
-### Infrastructure
-- **Oracle Cloud**: Docker 기반 호스팅
-- **CI/CD**: Jenkins 자동 배포 파이프라인
+### `short_url_stats` (통계 테이블)
+| Column | Type | Description |
+|--------|------|-------------|
+| id | bigint | Primary Key (PK) |
+| short_url_id | bigint | `short_url` 테이블 참조 (FK) |
+| stat_date | date | 통계 기준 날짜 (yyyy-MM-dd) |
+| click_count | bigint | 해당 날짜의 총 클릭 수 |
+| referer | text | 접근 경로 정보 |
+| created_at | timestamp | 기록 생성 일시 |
+| updated_at | timestamp | 기록 수정 일시 |
+
+---
+
+## 🔧 Technical Implementation & Design Rationale
+
+### 1. Url 단축 로직 (Base62 & ID-Based)
+- **ID 기반 인코딩**: DB의 Auto-Increment PK를 기반으로 **Base62(0-9, a-z, A-Z)** 인코딩을 수행합니다. 
+- **효율성**: 단순 해시 방식보다 충돌 위험이 적으며, 짧은 문자열(단 10자리 내외)로 수십억 개의 URL을 표현할 수 있습니다.
+
+### 2. 하이브리드 캐싱 전략 (Hybrid Caching)
+성능 극대화를 위해 데이터의 성격에 따라 두 가지 캐시 전략을 혼용합니다.
+
+#### **A. Write-Through (URL 메타데이터)**
+- 대상: 원본 URL 및 단축 URL 매핑 정보
+- 방식: 새로운 URL 생성 시 DB와 Redis에 동시에 데이터를 기록합니다.
+- 장점: 읽기 요청 시 DB가 아닌 캐시에 접근하도록 하여  **1ms 미만의 응답 속도**를 보장합니다.
+
+#### **B. Write-Behind / Write-Back (클릭 통계)**
+- 대상: 실시간 클릭 수 (`click_count`)
+- 방식: 사용자가 단축 URL을 클릭할 때마다 DB에 직접 쓰지 않고, **Redis의 `INCR` 명령**으로 카운트를 먼저 올립니다. 이후 **5분 주기 스케줄러**(`ShortUrlStatsScheduler`)가 Redis의 데이터를 DB로 일괄 업데이트(Bulk Update)합니다.
+- 장점: 초당 수천 건의 클릭이 발생해도 DB 커넥션 부하를 최소화하고 N+1 쿼리 문제를 방지합니다.
+
+### 3. Rolling Window 통계 알고리즘
+- 특정 시점의 스냅샷이 아닌, **현재 시점부터 과거를 역산(Rolling)**하는 동적 데이터 집계 방식을 적용했습니다.
+- QueryDSL을 활용하여 날짜별 `GROUP BY` 쿼리를 최적화하고, 서비스 레이어에서 주차/월별 데이터를 Map 기반으로 재구성하여 프론트엔드 차트 라이브러리에 최적화된 포맷으로 반환합니다.
+
+### 4. Zero-Division Handling (안정성)
+- 통계 데이터 집계 시 분모가 0이 되는 상황(`prev == 0`)을 비즈니스 로직에서 엄밀히 처리하여, 성장률 계산 시 런타임 에러를 방지하고 "신규 성장(+100%)" 또는 "변동 없음(0%)"으로 명확히 정의했습니다.
+
+---
+
+## 🔧 Infrastructure & Scalability
+- **Stateless Design**: 서버 내부에 상태를 저장하지 않아 트래픽 증가 시 수평 확장(Scale-out)이 용이합니다.
+- **PostgreSQL**: 안정적인 관계형 데이터 저장 및 인덱싱 최적화.
+- **Redis**: 고성능 인메모리 저장소를 활용한 트래픽 병목 현상 해소.
 
 ---
 
