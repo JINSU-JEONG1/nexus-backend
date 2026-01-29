@@ -16,7 +16,7 @@
 ### 핵심 성과
 - **고성능 캐싱 시스템 구축**: Redis Write-Through 전략으로 **80% 이상의 응답 속도 개선** 
 - **확장 가능한 아키텍처 설계**: Stateless 구조로 수평 확장 가능한 MSA 구현
-- **완전 자동화된 CI/CD 파이프라인**: Jenkins + Docker를 통한 무중단 배포 환경 구축
+- **CI/CD 파이프라인**: Jenkins + Docker를 통한 배포 환경 구축
 - **Production-Ready 코드**: Swagger 기반 API 문서 자동화 및 계층형 아키텍처 적용
 
 ### 🛠️ Tech Stack
@@ -41,7 +41,7 @@
 
 **핵심 기술 구현**
 - **양방향 캐싱 전략**: Redis를 활용한 Write-Through + Cache-Aside 패턴
-  - `shortUrls` 캐시: 리다이렉트 성능 최적화 (~1ms)
+  - `shortUrls` 캐시: 리다이렉트 성능 최적화
   - `originUrls` 캐시: 중복 생성 방지 (DB INSERT 제거)
 - **Base62 인코딩**: Auto Increment ID를 URL-safe한 짧은 키로 변환
 - **중복 처리 로직**: 캐시 우선 조회로 불필요한 DB 접근 최소화
@@ -53,8 +53,8 @@
   - `Monthly`: 최근 12개월간의 장기 트렌드
 
 **성능 개선 결과**
-- 캐시 HIT 시: PostgreSQL 대비 **50배 이상 빠른 응답** (50ms → 1ms)
-- DB 부하 감소: 읽기 요청의 **95% 이상을 Redis에서 처리**
+- 캐시 HIT 시: PostgreSQL 대비 **20배 이상 빠른 응답** (50ms → 1ms)
+- DB 부하 감소: 단축 URL redirect 요청의 **90% 이상을 Redis에서 처리**
 
 ---
 
@@ -122,7 +122,7 @@ nexus-backend/
 | Column | Type | Description |
 |--------|------|-------------|
 | id | bigint | Primary Key (PK) |
-| short_url_id | bigint | `short_url` 테이블 참조 (FK) |
+| short_url_id | bigint | `short_url` 테이블 참조 키 |
 | stat_date | date | 통계 기준 날짜 (yyyy-MM-dd) |
 | click_count | bigint | 해당 날짜의 총 클릭 수 |
 | referer | text | 접근 경로 정보 |
@@ -148,14 +148,11 @@ nexus-backend/
 #### **B. Write-Behind / Write-Back (클릭 통계)**
 - 대상: 실시간 클릭 수 (`click_count`)
 - 방식: 사용자가 단축 URL을 클릭할 때마다 DB에 직접 쓰지 않고, **Redis의 `INCR` 명령**으로 카운트를 먼저 올립니다. 이후 **5분 주기 스케줄러**(`ShortUrlStatsScheduler`)가 Redis의 데이터를 DB로 일괄 업데이트(Bulk Update)합니다.
-- 장점: 초당 수천 건의 클릭이 발생해도 DB 커넥션 부하를 최소화하고 N+1 쿼리 문제를 방지합니다.
+- 장점: 초당 수천 건의 클릭이 발생해도 DB 커넥션 부하를 최소화할수 있습니다.
 
 ### 3. Rolling Window 통계 알고리즘
 - 특정 시점의 스냅샷이 아닌, **현재 시점부터 과거를 역산(Rolling)**하는 동적 데이터 집계 방식을 적용했습니다.
 - QueryDSL을 활용하여 날짜별 `GROUP BY` 쿼리를 최적화하고, 서비스 레이어에서 주차/월별 데이터를 Map 기반으로 재구성하여 프론트엔드 차트 라이브러리에 최적화된 포맷으로 반환합니다.
-
-### 4. Zero-Division Handling (안정성)
-- 통계 데이터 집계 시 분모가 0이 되는 상황(`prev == 0`)을 비즈니스 로직에서 엄밀히 처리하여, 성장률 계산 시 런타임 에러를 방지하고 "신규 성장(+100%)" 또는 "변동 없음(0%)"으로 명확히 정의했습니다.
 
 ---
 
@@ -168,8 +165,7 @@ nexus-backend/
 
 ## 🎓 Future Enhancements
 - JWT 인증/인가 시스템
-- 실시간 통계 대시보드 (조회수, 접근 로그)
-- Custom Alias 지원
+- oAuth 로그인
 - Rate Limiting (요청 제한)
 
 ---
