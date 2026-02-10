@@ -12,14 +12,14 @@ spring:
       host: nexus-redis
       port: 6379
   cache:
-    type: redis 
+    type: redis
     redis:
       time-to-live: 86400000 # 24시간
       cache-null-values: false
 
 server:
   port: 4000
-  
+
 app:
   short-url:
-    base-url: http://js-nexus.kro.kr/re/
+    base-url: js-nexus.kro.kr/re/
