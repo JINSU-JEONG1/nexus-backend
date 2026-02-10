@@ -19,6 +19,7 @@ spring:
 
 server:
   port: 4000
+  forward-headers-strategy: native
 
 app:
   short-url:

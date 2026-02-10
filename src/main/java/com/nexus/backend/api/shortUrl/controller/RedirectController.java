@@ -38,7 +38,18 @@ public class RedirectController {
             @PathVariable("shortHash") String shortHash) {
         log.info("short URL redirect request hash: {}", shortHash);
         String originUrl = shortUrlService.getOriginUrlByShortUrl(shortHash);
-        return new RedirectView(originUrl);
+        log.info("short URL redirect originUrl: {}", originUrl);
+
+        // 프로토콜이 없으면 브라우저가 현재 도메인의 하위 경로로 인식하므로 프로토콜 강제 추가
+        if (!originUrl.startsWith("http://") && !originUrl.startsWith("https://")) {
+            log.info("Protocol missing, prepending https:// to originUrl: {}", originUrl);
+            originUrl = "https://" + originUrl;
+        }
+        
+        RedirectView redirectView = new RedirectView(originUrl);
+        redirectView.setContextRelative(false); // 절대 경로 사용 강제
+        redirectView.setExposeModelAttributes(false); // 모델 속성 노출 방지
+        return redirectView;
     }
 
 }
