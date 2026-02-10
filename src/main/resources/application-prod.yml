@@ -22,4 +22,4 @@ server:
 
 app:
   short-url:
-    base-url: js-nexus.kro.kr/re/
+    base-url: https://js-nexus.kro.kr/re/
